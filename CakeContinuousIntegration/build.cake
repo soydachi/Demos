@@ -1,10 +1,15 @@
+#tool "nuget:?package=NUnit.ConsoleRunner"
 // Arguments
 var target = Argument("target", "Default");
+var buildId = Argument("buildId","0");
+var zipDir = Argument("zipDir","./");
 var configuration = Argument("configuration", "Release");
 
 // Define directories
 var buildDir = Directory("./bin") + Directory(configuration);
-#tool "nuget:?package=NUnit.ConsoleRunner"
+var appName = "CISample";
+var version = "1.0.4";
+var informationalVersion = string.Concat(version + "-dev" + buildId);
 
 // Tasks
 Task("Clean")
@@ -20,14 +25,29 @@ Task("Restore-Nuget-Packages")
     NuGetRestore("./src/CISample.sln");
 });
 
+Task("Create-AssemblyInfo")
+    .Does(() =>
+{
+    var file = "./src/CISample/Properties/AssemblyInfo.cs";
+    
+    CreateAssemblyInfo(file, new AssemblyInfoSettings {
+        Title = "CISample",
+        Description = "Universal Windows Platform App",
+        Product = "CISample",
+        Version = version,
+        FileVersion = version,
+        InformationalVersion = informationalVersion,
+        Copyright = string.Format("Copyright (c) Dachi Gogotchuri - {0}", DateTime.Now.Year)
+    });
+});
+
 Task("Build")
-    .IsDependentOn("Restore-Nuget-Packages")
+    .IsDependentOn("Create-AssemblyInfo")
     .Does(() =>
 {
     if (IsRunningOnWindows())
     {
-        MSBuild("./src/CISample.sln", settings =>
-            settings.SetConfiguration(configuration));
+        DotNetBuild("./src/CISample.sln");
     }
     else
     {
@@ -37,26 +57,25 @@ Task("Build")
 });
 
 Task("Run-Unit-Tests")
-    .IsDependentOn("Build")
     .Does(() =>
 {
     NUnit3("./src/**/bin/" + configuration + "/*.UnitTests.dll", new NUnit3Settings {NoResults = true});
 });
 
-Task("NetCore-PackPackage")
+Task("Zip-Package")
     .Does(() =>
 {
-    // var settings = new DotNetCorePackSettings
-    // {
-    //     Frameworks = new[] { "dnx451", "dnxcore50" },
-    //     Configurations = new[] { "Debug", "Release" },
-    //     OutputDirectory = "./artifacts/"
-    // };
-            
-    //DotNetCorePack("./src/*");
+    if (DirectoryExists(string.Concat(zipDir+"AppPackages")))
+    {
+        Zip(string.Concat(zipDir+"AppPackages"), string.Concat(zipDir+"drop.zip"));
+    }
+    else
+    {
+        throw new Exception(string.Concat("AppPackages not exists in the current context --> "+zipDir));
+    }
 });
 
 Task("Default")
-    .IsDependentOn("Run-Unit-Tests");
+    .IsDependentOn("Build");
 
 RunTarget(target);

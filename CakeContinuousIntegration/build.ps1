@@ -16,6 +16,10 @@ and execute your Cake build script with the parameters you provide.
 .PARAMETER Script
 The build script to execute.
 .PARAMETER Target
+The build Id
+.PARAMETER BuildId
+The directory where we will zip the version
+.PARAMETER ZipDir
 The build script target to run.
 .PARAMETER Configuration
 The build configuration to use.
@@ -42,6 +46,8 @@ http://cakebuild.net
 Param(
     [string]$Script = "build.cake",
     [string]$Target = "Default",
+    [string]$BuildId = "0",
+    [string]$ZipDir = "./",
     [string]$Configuration = "Release",
     [ValidateSet("Quiet", "Minimal", "Normal", "Verbose", "Diagnostic")]
     [string]$Verbosity = "Verbose",
@@ -141,5 +147,5 @@ if (!(Test-Path $CAKE_EXE)) {
 
 # Start Cake
 Write-Host "Running build script..."
-Invoke-Expression "& `"$CAKE_EXE`" `"$Script`" -target=`"$Target`" -configuration=`"$Configuration`" -verbosity=`"$Verbosity`" $UseMono $UseDryRun $UseExperimental $ScriptArgs"
+Invoke-Expression "& `"$CAKE_EXE`" `"$Script`" -target=`"$Target`" -zipDir=`"$ZipDir`" -buildId=`"$BuildId`" -configuration=`"$Configuration`" -verbosity=`"$Verbosity`" $UseMono $UseDryRun $UseExperimental $ScriptArgs"
 exit $LASTEXITCODE
